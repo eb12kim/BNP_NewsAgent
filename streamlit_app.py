@@ -23,6 +23,10 @@ PRESET_LABELS = {
 }
 
 
+def _clamp_int(value: int, min_value: int, max_value: int) -> int:
+    return max(min_value, min(max_value, int(value)))
+
+
 def _apply_secret_credentials() -> None:
     # Streamlit Cloud: set these in App settings -> Secrets.
     try:
@@ -114,6 +118,8 @@ def app() -> None:
     _apply_secret_credentials()
     _init_state()
     current = st.session_state.settings
+    current_lookback = _clamp_int(int(current.get("lookback_days", 3)), 1, 30)
+    current_candidate_count = _clamp_int(int(current.get("candidate_count", 100)), 10, 100)
 
     st.title("Daily News Monitoring")
     if not main.NAVER_CLIENT_ID or not main.NAVER_CLIENT_SECRET:
@@ -132,11 +138,11 @@ def app() -> None:
         )
     with c2:
         lookback_days = st.number_input(
-            "조회기간(일)", min_value=1, max_value=30, value=int(current.get("lookback_days", 3)), step=1
+            "조회기간(일)", min_value=1, max_value=30, value=current_lookback, step=1
         )
     with c3:
         candidate_count = st.number_input(
-            "후보수(최대100)", min_value=10, max_value=100, value=int(current.get("candidate_count", 100)), step=1
+            "후보수(최대100)", min_value=10, max_value=100, value=current_candidate_count, step=1
         )
     with c4:
         output_dir = st.text_input("산출물 저장 경로", value=str(current.get("output_dir", ".")))

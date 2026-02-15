@@ -1,0 +1,17 @@
+{
+  "preset": "company_first",
+  "lookback_days": 90,
+  "candidate_count": 100,
+  "focus_weights": {
+    "company_group": 2.0,
+    "policy_reg": 1.0,
+    "els_lending": 0.5
+  },
+  "topic_quota_ratio": {
+    "company_group": 0.35,
+    "policy_reg": 0.25,
+    "lending": 0.2,
+    "els": 0.1,
+    "product": 0.1
+  }
+}

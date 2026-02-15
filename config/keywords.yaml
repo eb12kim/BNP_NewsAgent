@@ -1,0 +1,145 @@
+version: "1.0"
+language: "ko"
+
+entities:
+  brand:
+    - BNP파리바카디프생명
+    - 카디프생명
+    - BNP Paribas Cardif
+  els_hindex:
+    - ELS
+    - 홍콩H지수
+    - H지수
+    - HSCEI
+  product:
+    - ELS변액보험
+    - ETF변액보험
+    - 변액보험
+    - ELS연계
+    - ETF연계
+    - 신용생명보험
+    - 단체신용보험
+    - CPI
+    - 대출안심보장보험
+
+risk:
+  sanction:
+    - 금감원
+    - 금융감독원
+    - 금융위원회
+    - 검사
+    - 제재
+    - 징계
+    - 과징금
+  dispute:
+    - 배상
+    - 분쟁조정
+    - 민원
+    - 소송
+  loss:
+    - 원금손실
+    - 손실확정
+    - 대규모손실
+    - 녹인
+    - 배리어
+    - 손해
+    - 피해
+  scale:
+    - 대규모
+    - 집단
+    - 확정
+    - 비율
+
+groups:
+  ENTITY.COMPANY_OFFICIAL:
+    description: 자사 정식명
+    terms:
+      - BNP파리바카디프생명
+      - BNP 파리바 카디프생명
+  ENTITY.COMPANY_SHORT:
+    description: 자사 축약명
+    terms:
+      - 카디프생명
+      - 카디프 생명
+  PRODUCT.VARIABLE_ELSETF:
+    description: ELS/ETF 변액보험
+    terms:
+      - ELS변액보험
+      - ETF변액보험
+      - ELS연계
+      - ETF연계
+  PRODUCT.CPI:
+    description: CPI/신용생명보험
+    terms:
+      - CPI
+      - 신용생명보험
+      - 단체신용보험
+      - 대출안심보장보험
+  RISK.ELS_ASSET:
+    description: ELS/H지수 자산
+    terms:
+      - ELS
+      - 홍콩H지수
+      - H지수
+      - HSCEI
+  RISK.ELS_SANCTION:
+    description: ELS 관련 제재/검사
+    terms:
+      - 금감원
+      - 검사
+      - 제재
+      - 징계
+      - 과징금
+  RISK.ELS_DISPUTE:
+    description: ELS 관련 분쟁/배상
+    terms:
+      - 배상
+      - 분쟁조정
+      - 민원
+      - 소송
+  RISK.ELS_LOSS:
+    description: ELS 손실 신호
+    terms:
+      - 원금손실
+      - 손실확정
+      - 대규모손실
+      - 녹인
+      - 배리어
+      - 손해
+      - 피해
+  RISK.ESCALATION_SIGNAL:
+    description: 집단/대규모 확산 신호
+    terms:
+      - 대규모
+      - 집단
+      - 확정
+      - 비율
+  POLICY.REGULATOR:
+    description: 감독기관 용어
+    terms:
+      - 금감원
+      - 금융감독원
+      - 금융위원회
+  NOISE.STRONG:
+    description: 강한 노이즈
+    terms:
+      - 리포트
+      - 목표주가
+      - 차트
+      - 급등
+      - 급락
+      - 종목
+      - 매수
+      - 매도
+  NOISE.MEDIUM:
+    description: 중간 노이즈
+    terms:
+      - 증시
+      - 코스피
+      - 코스닥
+      - 나스닥
+      - 다우
+  NOISE.WEAK:
+    description: 약한 노이즈
+    terms:
+      - 주가

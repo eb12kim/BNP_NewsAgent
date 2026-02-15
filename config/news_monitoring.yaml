@@ -1,0 +1,82 @@
+version: "1.0"
+timezone: "Asia/Seoul"
+days_back: 3
+
+runtime:
+  max_days_back: 3
+  default_days_back: 3
+
+query_groups:
+  - key: BRAND_CORE
+    label: Brand - Core
+    query: '"BNP파리바카디프생명" | "카디프생명"'
+  - key: BRAND_RISK
+    label: Brand - Risk
+    query: '("BNP파리바카디프생명" | "카디프생명") (민원 | 제재 | 과징금 | 소송 | 분쟁 | 피해 | 불완전판매 | 금감원 | 소비자보호)'
+  - key: PRODUCT_VA
+    label: Product - Variable (ELS/ETF)
+    query: '("BNP파리바카디프생명" | "카디프생명") ("ELS변액보험" | "ETF변액보험" | "변액보험" | "ELS연계" | "ETF연계")'
+  - key: RISK_ELS_CORE
+    label: Risk - ELS/H Index Loss
+    query: '("ELS" | "홍콩H지수" | "H지수") (원금손실 | 손실확정 | 대규모손실 | 녹인 | 배리어 | 손해 | 피해)'
+  - key: RISK_ELS_SANCTION
+    label: Risk - ELS Sanction/Inspection
+    query: '("ELS" | "홍콩H지수" | "H지수") (금감원 | 금융위원회 | 검사 | 제재 | 징계 | 과징금 | 기관경고 | 시정명령)'
+  - key: POLICY_ELS_CONSUMER
+    label: Policy - Consumer Protection (ELS)
+    query: '("ELS" | "홍콩H지수" | "H지수") (금융소비자보호법 | 불완전판매 | 내부통제 | 적합성 | 적정성 | 설명의무 | 판매책임)'
+  - key: PRODUCT_CPI
+    label: Product - CPI
+    query: '("신용생명보험" | "단체신용보험" | "CPI" | "대출안심보장보험") (보험사 | 금융사 | 카드사 | 저축은행)'
+
+keyword_dictionary:
+  external_file: "config/keywords.yaml"
+  normalize:
+    lowercase: true
+    strip_html: true
+    collapse_whitespace: true
+  field_weights:
+    title: 1.5
+    description: 1.0
+
+scoring:
+  base_score: 10
+  title_weight: 1.5
+  desc_weight: 1.0
+
+  recency:
+    hours_0_6: 8
+    hours_6_24: 6
+    days_1_2: 3
+    days_2_3: 1
+    older: 0
+
+  noise_keywords:
+    strong: ["리포트", "목표주가", "차트", "급등", "급락", "종목", "매수", "매도"]
+    medium: ["증시", "코스피", "코스닥", "나스닥", "다우"]
+    weak: ["주가"]
+  noise_penalty:
+    strong: 12
+    medium: 8
+    weak: 6
+
+  source_scoring:
+    tier_1_contains_any: ["yna", "yonhap", "mk.co.kr", "hankyung", "sedaily", "donga", "chosun", "joongang", "hani", "khan", "fnnews", "mt.co.kr", "newsis", "etnews"]
+    tier_2_contains_any: ["news", "press", "biz", "economy"]
+    scores:
+      tier_1: 10
+      tier_2: 4
+      unknown: 1
+      suspicious: -3
+
+  duplicate_penalty:
+    same_originallink: 100
+    similar: 15
+
+  forced_high_alert:
+    add_score: 30
+
+  thresholds:
+    high_alert: 70
+    watchlist: 50
+    fyi: 35

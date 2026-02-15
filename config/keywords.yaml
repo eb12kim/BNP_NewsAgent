@@ -1,13 +1,16 @@
-version: "1.0"
+version: "1.1"
 language: "ko"
 
 entities:
   brand:
     - BNP파리바카디프생명
     - 카디프생명
+    - 카디프 생명
     - BNP Paribas Cardif
+    - BNP파리바
   els_hindex:
     - ELS
+    - 주가연계증권
     - 홍콩H지수
     - H지수
     - HSCEI
@@ -19,8 +22,18 @@ entities:
     - ETF연계
     - 신용생명보험
     - 단체신용보험
+    - 신용보험
     - CPI
+    - 대출안심보험
     - 대출안심보장보험
+  partnership:
+    - 토스
+    - toss
+    - 핀다
+    - finda
+    - 핀다 대출
+    - 미래에셋캐피탈
+    - 우리카드
 
 risk:
   sanction:
@@ -31,11 +44,14 @@ risk:
     - 제재
     - 징계
     - 과징금
+    - 기관경고
+    - 시정명령
   dispute:
     - 배상
     - 분쟁조정
     - 민원
     - 소송
+    - 불완전판매
   loss:
     - 원금손실
     - 손실확정
@@ -52,20 +68,29 @@ risk:
 
 groups:
   ENTITY.COMPANY_OFFICIAL:
-    description: 자사 정식명
+    description: 당사 정식명
     terms:
       - BNP파리바카디프생명
       - BNP 파리바 카디프생명
   ENTITY.COMPANY_SHORT:
-    description: 자사 축약명
+    description: 당사 축약명
     terms:
       - 카디프생명
       - 카디프 생명
+      - 카디프
+  ENTITY.GROUP:
+    description: BNP그룹
+    terms:
+      - BNP파리바
+      - BNP Paribas
+      - BNP파리바 그룹
+
   PRODUCT.VARIABLE_ELSETF:
     description: ELS/ETF 변액보험
     terms:
       - ELS변액보험
       - ETF변액보험
+      - 변액보험
       - ELS연계
       - ETF연계
   PRODUCT.CPI:
@@ -74,11 +99,15 @@ groups:
       - CPI
       - 신용생명보험
       - 단체신용보험
+      - 신용보험
+      - 대출안심보험
       - 대출안심보장보험
+
   RISK.ELS_ASSET:
     description: ELS/H지수 자산
     terms:
       - ELS
+      - 주가연계증권
       - 홍콩H지수
       - H지수
       - HSCEI
@@ -90,6 +119,8 @@ groups:
       - 제재
       - 징계
       - 과징금
+      - 기관경고
+      - 시정명령
   RISK.ELS_DISPUTE:
     description: ELS 관련 분쟁/배상
     terms:
@@ -97,6 +128,7 @@ groups:
       - 분쟁조정
       - 민원
       - 소송
+      - 불완전판매
   RISK.ELS_LOSS:
     description: ELS 손실 신호
     terms:
@@ -114,12 +146,85 @@ groups:
       - 집단
       - 확정
       - 비율
+
   POLICY.REGULATOR:
     description: 감독기관 용어
     terms:
       - 금감원
       - 금융감독원
       - 금융위원회
+      - 보험업감독규정
+      - 금융소비자보호법
+      - 금소법
+      - 상생금융
+
+  PARTNERSHIP.CORE:
+    description: 파트너십 핵심 키워드
+    terms:
+      - 토스
+      - toss
+      - 핀다
+      - finda
+      - 핀다 대출
+      - 미래에셋캐피탈
+      - 우리카드
+
+  NOISE.SPORTS:
+    description: 스포츠 후원/구단 노이즈
+    terms:
+      - 축구
+      - 야구
+      - 농구
+      - 배구
+      - 골프
+      - e스포츠
+      - esports
+      - 구단
+      - 선수
+      - 감독
+      - 코치
+      - 경기
+      - 리그
+      - K리그
+      - KBO
+      - KBL
+      - WKBL
+      - 챔피언스리그
+      - 유니폼
+      - 후원
+      - 스폰서
+      - 스폰서십
+
+  FILTER.FINANCE_KEEP:
+    description: 금융/보험 문맥 유지 키워드
+    terms:
+      - 보험
+      - 생명보험
+      - 신용보험
+      - 단체신용보험
+      - 대출
+      - 대출안심
+      - 금감원
+      - 금융위원회
+      - 금융감독원
+      - 정책
+      - 제재
+      - 민원
+      - 소비자보호
+  FILTER.STRONG_FINANCE_KEEP:
+    description: 스포츠 문맥에서 유지할 강한 금융 키워드
+    terms:
+      - 신용보험
+      - 단체신용보험
+      - 신용생명보험
+      - 대출안심보험
+      - 대출안심보장보험
+      - 금융소비자보호법
+      - 보험업감독규정
+      - 검사
+      - 제재
+      - 과징금
+
   NOISE.STRONG:
     description: 강한 노이즈
     terms:

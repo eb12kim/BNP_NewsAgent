@@ -1,33 +1,83 @@
-version: "1.0"
+version: "1.1"
 timezone: "Asia/Seoul"
 days_back: 3
 
 runtime:
-  max_days_back: 3
+  max_days_back: 7
   default_days_back: 3
 
 query_groups:
   - key: BRAND_CORE
     label: Brand - Core
-    query: '"BNP파리바카디프생명" | "카디프생명"'
+    query: '("BNP파리바카디프생명" | "카디프생명" | "카디프 생명")'
+
   - key: BRAND_RISK
     label: Brand - Risk
-    query: '("BNP파리바카디프생명" | "카디프생명") (민원 | 제재 | 과징금 | 소송 | 분쟁 | 피해 | 불완전판매 | 금감원 | 소비자보호)'
+    query: '("BNP파리바카디프생명" | "카디프생명" | "카디프 생명") (민원 | 분쟁조정 | 소송 | 제재 | 과징금 | 검사 | 불완전판매 | 소비자보호)'
+
+  - key: GROUP_COMPLIANCE
+    label: Group - Compliance/Risk
+    query: '("BNP파리바" | "BNP Paribas") (보험 | 컴플라이언스 | 내부통제 | 리스크관리)'
+
   - key: PRODUCT_VA
     label: Product - Variable (ELS/ETF)
-    query: '("BNP파리바카디프생명" | "카디프생명") ("ELS변액보험" | "ETF변액보험" | "변액보험" | "ELS연계" | "ETF연계")'
+    query: '("BNP파리바카디프생명" | "카디프생명") ("변액보험" | "ELS변액보험" | "ETF변액보험" | "ELS연계" | "ETF연계")'
+
+  - key: PRODUCT_VA_POLICY
+    label: Product - Variable Policy
+    query: '("변액보험" | "특별계정") (감독 | 규제 | 공시 | 제도개선)'
+
+  - key: PRODUCT_CPI
+    label: Product - CPI/Credit Insurance
+    query: '("신용생명보험" | "단체신용보험" | "신용보험" | "CPI" | "대출안심보험" | "대출안심보장보험") (보험사 | 금융사 | 카드사 | 저축은행)'
+
+  - key: PRODUCT_CPI_POLICY
+    label: Product - CPI Policy
+    query: '("신용생명보험" | "단체신용보험" | "신용보험" | "CPI") (금감원 | 금융위원회 | 제도 | 가이드라인)'
+
+  - key: LENDING_CREDIT_INSURANCE
+    label: Lending - Credit Insurance
+    query: '("대출" | "신용대출" | "주담대") ("신용보험" | "단체신용보험" | "대출안심보험")'
+
+  - key: POLICY_GENERAL_INS
+    label: Policy - Insurance General
+    query: '(금감원 | 금융위원회 | 금융감독원) (보험업감독규정 | 보험소비자보호 | 검사결과 | 제재심)'
+
+  - key: POLICY_CONSUMER
+    label: Policy - Consumer Protection
+    query: '("금융소비자보호법" | "금소법") (보험 | 설명의무 | 적합성 | 불완전판매)'
+
+  - key: POLICY_WINWIN_FINANCE
+    label: Policy - Win-Win Finance
+    query: '("상생금융") (보험 | 대출 | 신용보험 | 금융위 | 금감원)'
+
   - key: RISK_ELS_CORE
     label: Risk - ELS/H Index Loss
-    query: '("ELS" | "홍콩H지수" | "H지수") (원금손실 | 손실확정 | 대규모손실 | 녹인 | 배리어 | 손해 | 피해)'
+    query: '("ELS" | "주가연계증권" | "홍콩H지수" | "HSCEI") (원금손실 | 손실확정 | 대규모손실 | 녹인 | 배리어 | 손해 | 피해)'
+
   - key: RISK_ELS_SANCTION
     label: Risk - ELS Sanction/Inspection
-    query: '("ELS" | "홍콩H지수" | "H지수") (금감원 | 금융위원회 | 검사 | 제재 | 징계 | 과징금 | 기관경고 | 시정명령)'
-  - key: POLICY_ELS_CONSUMER
-    label: Policy - Consumer Protection (ELS)
-    query: '("ELS" | "홍콩H지수" | "H지수") (금융소비자보호법 | 불완전판매 | 내부통제 | 적합성 | 적정성 | 설명의무 | 판매책임)'
-  - key: PRODUCT_CPI
-    label: Product - CPI
-    query: '("신용생명보험" | "단체신용보험" | "CPI" | "대출안심보장보험") (보험사 | 금융사 | 카드사 | 저축은행)'
+    query: '("ELS" | "홍콩H지수" | "HSCEI") (금감원 | 금융위원회 | 검사 | 제재 | 징계 | 과징금 | 기관경고 | 시정명령)'
+
+  - key: RISK_ELS_DISPUTE
+    label: Risk - ELS Dispute/Compensation
+    query: '("ELS" | "주가연계증권") (분쟁조정 | 배상기준 | 자율배상 | 소송)'
+
+  - key: PARTNER_TOSS
+    label: Partnership - Toss
+    query: '("토스" | "toss") (보험 | 신용보험 | 단체신용보험 | 대출안심 | 제휴)'
+
+  - key: PARTNER_FINDA_LOAN
+    label: Partnership - Finda Loan
+    query: '("핀다" | "finda" | "핀다 대출") (보험 | 신용보험 | 단체신용보험 | 대출안심 | 제휴)'
+
+  - key: PARTNER_MIRAE_CAPITAL
+    label: Partnership - Mirae Asset Capital
+    query: '("미래에셋캐피탈") (보험 | 신용보험 | 단체신용보험 | 대출 | 제휴)'
+
+  - key: PARTNER_WOORI_CARD
+    label: Partnership - Woori Card
+    query: '("우리카드") (보험 | 신용보험 | 단체신용보험 | 대출 | 제휴)'
 
 keyword_dictionary:
   external_file: "config/keywords.yaml"

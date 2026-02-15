@@ -988,6 +988,7 @@ def build_pdf_for_selected(news_items: list[dict], file_path: str) -> str:
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
     from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.cidfonts import UnicodeCIDFont
     from reportlab.pdfbase.ttfonts import TTFont
     from reportlab.pdfgen import canvas
 
@@ -1001,6 +1002,14 @@ def build_pdf_for_selected(news_items: list[dict], file_path: str) -> str:
         pdfmetrics.registerFont(TTFont("Malgun-Bold", str(bold_path)))
         regular_font = "Malgun"
         bold_font = "Malgun-Bold"
+    else:
+        # Linux/Cloud fallback for Korean text rendering.
+        try:
+            pdfmetrics.registerFont(UnicodeCIDFont("HYSMyeongJo-Medium"))
+            regular_font = "HYSMyeongJo-Medium"
+            bold_font = "HYSMyeongJo-Medium"
+        except Exception:
+            pass
 
     page_w, page_h = A4
     margin = 2 * cm

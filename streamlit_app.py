@@ -56,6 +56,8 @@ def _init_state() -> None:
         st.session_state.target_dates = set()
     if "selection_map" not in st.session_state:
         st.session_state.selection_map = {}
+    if "editor_rows" not in st.session_state:
+        st.session_state.editor_rows = []
     if "last_candidates_csv" not in st.session_state:
         st.session_state.last_candidates_csv = ""
     if "last_pdf_path" not in st.session_state:
@@ -111,6 +113,15 @@ def _build_table_rows(candidates: list[dict], selected_ids: set[int]) -> list[di
             }
         )
     return rows
+
+
+def _normalize_edited_rows(edited_data) -> list[dict]:
+    if isinstance(edited_data, list):
+        return [dict(row) for row in edited_data]
+    to_dict = getattr(edited_data, "to_dict", None)
+    if callable(to_dict):
+        return [dict(row) for row in edited_data.to_dict(orient="records")]
+    return []
 
 
 def app() -> None:
@@ -204,6 +215,7 @@ def app() -> None:
             st.session_state.candidates = candidates
             st.session_state.target_dates = target_dates
             st.session_state.selection_map = {int(i.get("candidate_id", 0)): False for i in candidates}
+            st.session_state.editor_rows = _build_table_rows(candidates, set())
             st.session_state.last_candidates_csv = csv_path
             st.success(f"후보 {len(candidates)}건 생성 완료")
 
@@ -212,11 +224,12 @@ def app() -> None:
 
     candidates = st.session_state.candidates
     if candidates:
-        selected_ids = {cid for cid, checked in st.session_state.selection_map.items() if checked}
-        rows = _build_table_rows(candidates, selected_ids)
+        if not st.session_state.editor_rows or len(st.session_state.editor_rows) != len(candidates):
+            selected_ids = {cid for cid, checked in st.session_state.selection_map.items() if checked}
+            st.session_state.editor_rows = _build_table_rows(candidates, selected_ids)
 
         edited = st.data_editor(
-            rows,
+            st.session_state.editor_rows,
             use_container_width=True,
             hide_index=True,
             key="candidate_editor",
@@ -235,8 +248,12 @@ def app() -> None:
             disabled=["ID", "레벨", "토픽", "점수", "발행시각", "매체", "제목", "원문"],
         )
 
+        edited_rows = _normalize_edited_rows(edited)
+        if edited_rows:
+            st.session_state.editor_rows = edited_rows
+
         new_selection_map: dict[int, bool] = {}
-        for row in edited:
+        for row in st.session_state.editor_rows:
             cid = int(row.get("ID", 0) or 0)
             new_selection_map[cid] = bool(row.get("선택", False))
         st.session_state.selection_map = new_selection_map

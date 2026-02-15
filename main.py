@@ -30,6 +30,7 @@ NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET", "").strip()
 API_URL = "https://openapi.naver.com/v1/search/news.json"
 TOP10_FILE = "news_report.csv"
 CANDIDATES_FILE = "news_candidates_100.csv"
+DRAFT_EDITS_FILE = "news_draft_edits.json"
 DISPLAY_PER_QUERY = 100
 KST = ZoneInfo("Asia/Seoul")
 SETTINGS_FILE = "settings.json"
@@ -74,6 +75,73 @@ EMAIL_TO = []  # e.g. ["all@company.com"]
 
 
 SENSITIVE_TERMS = ["m&a", "인수합병", "인수", "합병", "매각", "지분매각", "경영권", "인수전", "적대적", "매물", "lbo"]
+SPORTS_NOISE_TERMS = [
+    "축구",
+    "야구",
+    "농구",
+    "배구",
+    "골프",
+    "e스포츠",
+    "esports",
+    "구단",
+    "선수",
+    "감독",
+    "코치",
+    "경기",
+    "리그",
+    "K리그",
+    "KBO",
+    "KBL",
+    "WKBL",
+    "챔피언스리그",
+    "유니폼",
+    "후원",
+    "스폰서",
+    "스폰서십",
+    "배구단",
+    "V리그",
+    "브이리그",
+    "세트스코어",
+    "득점",
+    "라운드",
+    "챔프전",
+    "플레이오프",
+]
+FINANCE_KEEP_TERMS = [
+    "보험",
+    "생명보험",
+    "신용보험",
+    "단체신용보험",
+    "대출",
+    "대출안심",
+    "금감원",
+    "금융위원회",
+    "금융감독원",
+    "정책",
+    "제재",
+    "민원",
+    "소비자보호",
+]
+STRONG_FINANCE_TERMS = [
+    "신용보험",
+    "단체신용보험",
+    "신용생명보험",
+    "대출안심보험",
+    "대출안심보장보험",
+    "금융소비자보호법",
+    "보험업감독규정",
+    "검사",
+    "제재",
+    "과징금",
+]
+
+
+def _keyword_group_terms(group_key: str, fallback: list[str]) -> list[str]:
+    groups = KEYWORDS_CONFIG.get("groups", {}) if isinstance(KEYWORDS_CONFIG, dict) else {}
+    node = groups.get(group_key, {}) if isinstance(groups, dict) else {}
+    terms = node.get("terms", []) if isinstance(node, dict) else []
+    cleaned = [str(t).strip() for t in terms if str(t).strip()]
+    return cleaned if cleaned else list(fallback)
 
 MEDIA_PRIORITY = {
     "yna.co.kr": 100,
@@ -424,6 +492,33 @@ def contains_sensitive_topic(item: dict) -> bool:
     return any(term in text_blob for term in SENSITIVE_TERMS)
 
 
+def is_sports_noise_article(item: dict) -> bool:
+    """
+    Exclude sports sponsorship/team articles that match partner keywords
+    but are unrelated to insurance/financial monitoring.
+    """
+    text_blob = f"{item.get('title', '')} {item.get('summary', '')}".lower()
+    sports_terms = _keyword_group_terms("NOISE.SPORTS", SPORTS_NOISE_TERMS)
+    finance_keep_terms = _keyword_group_terms("FILTER.FINANCE_KEEP", FINANCE_KEEP_TERMS)
+    strong_finance_terms = _keyword_group_terms("FILTER.STRONG_FINANCE_KEEP", STRONG_FINANCE_TERMS)
+    sports_hits = sum(1 for term in sports_terms if term.lower() in text_blob)
+    if sports_hits == 0:
+        return False
+
+    # For partner queries, sports context is a hard exclude by default to avoid sponsor-team noise.
+    matched_groups = {str(g).upper() for g in item.get("matched_groups", [])}
+    if any(g.startswith("PARTNER_") for g in matched_groups):
+        if any(term.lower() in text_blob for term in strong_finance_terms):
+            return False
+        return True
+
+    # Non-partner queries: keep only if finance context is clearly present.
+    finance_hits = sum(1 for term in finance_keep_terms if term.lower() in text_blob)
+    if finance_hits >= 2:
+        return False
+    return True
+
+
 def apply_topic_quotas(news_items: list[dict], target_count: int) -> list[dict]:
     quotas = {topic: max(1, int(target_count * ratio)) for topic, ratio in TOPIC_QUOTA_RATIO.items()}
     selected_keys = set()
@@ -631,6 +726,53 @@ def make_safe_output_path(file_path: str) -> str:
         stamp = datetime.now(KST).strftime("%Y%m%d_%H%M%S")
         fallback = path.with_name(f"{path.stem}_{stamp}{path.suffix}")
         return str(fallback.resolve())
+
+
+def save_draft_edits(draft_items: list[dict], file_path: str = DRAFT_EDITS_FILE) -> str:
+    safe_path = make_safe_output_path(file_path)
+    rows = []
+    for idx, item in enumerate(draft_items, start=1):
+        row = {
+            "order": idx,
+            "candidate_id": int(item.get("candidate_id", 0) or 0),
+            "title": str(item.get("title", "") or ""),
+            "summary_note": str(item.get("summary_note", "") or ""),
+            "body_override": str(item.get("body_override", "") or ""),
+            "link": str(item.get("link", "") or ""),
+            "published_at": str(item.get("published_at", "") or ""),
+            "media_domain": str(item.get("media_domain", "") or ""),
+        }
+        rows.append(row)
+    Path(safe_path).write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
+    return safe_path
+
+
+def load_draft_edits(file_path: str = DRAFT_EDITS_FILE) -> list[dict]:
+    path = resolve_output_file_path(file_path)
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    if not isinstance(data, list):
+        return []
+    result = []
+    for row in data:
+        if not isinstance(row, dict):
+            continue
+        result.append(
+            {
+                "candidate_id": int(row.get("candidate_id", 0) or 0),
+                "title": str(row.get("title", "") or ""),
+                "summary_note": str(row.get("summary_note", "") or ""),
+                "body_override": str(row.get("body_override", "") or ""),
+                "link": str(row.get("link", "") or ""),
+                "published_at": str(row.get("published_at", "") or ""),
+                "media_domain": str(row.get("media_domain", "") or ""),
+            }
+        )
+    return result
 
 
 def save_candidates_to_csv(news_items: list[dict], file_path: str) -> str:
@@ -1022,7 +1164,7 @@ def build_pdf_for_selected(news_items: list[dict], file_path: str) -> str:
     article_blocks = []
     continuation_top_gap = 24
     for item in news_items:
-        body_text = fetch_article_body(item.get("link", ""))
+        body_text = str(item.get("body_override", "") or "").strip() or fetch_article_body(item.get("link", ""))
         summary_note_text = item.get("summary_note", "") or ""
         title_lines = wrap_text_for_canvas(c, item.get("title", ""), content_width, bold_font, 16)[:3]
         link_lines = wrap_text_for_canvas(c, item.get("link", ""), value_width, regular_font, 11)[:2]
@@ -1263,7 +1405,8 @@ def collect_candidates(lookback_days: int | None = None, max_candidates: int | N
     merged = merge_and_deduplicate(all_batches)
     by_date = filter_by_days_back(merged, now_kst, days_back)
     no_sensitive = [item for item in by_date if not contains_sensitive_topic(item)]
-    pool = [score_article(item, scoring_cfg, KEYWORDS_CONFIG, now_kst=now_kst) for item in no_sensitive]
+    no_sports_noise = [item for item in no_sensitive if not is_sports_noise_article(item)]
+    pool = [score_article(item, scoring_cfg, KEYWORDS_CONFIG, now_kst=now_kst) for item in no_sports_noise]
     deduped_scored = dedupe_and_cluster(pool, scoring_cfg)
     ranked = [row.item for row in deduped_scored]
     target_count = max(1, min(100, max_candidates if max_candidates is not None else CANDIDATE_COUNT))

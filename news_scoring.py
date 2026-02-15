@@ -201,19 +201,33 @@ def score_article(article: dict, config: dict, keywords: dict, now_kst: Optional
     group_weights = {
         "BRAND_CORE": 18,
         "BRAND_RISK": 20,
+        "GROUP_COMPLIANCE": 17,
         "PRODUCT_VA": 14,
+        "PRODUCT_VA_POLICY": 14,
         "PRODUCT_VA_CORE": 14,
         "RISK_ELS_CORE": 14,
         "RISK_ELS_LOSS": 16,
         "RISK_ELS_SANCTION": 18,
+        "RISK_ELS_DISPUTE": 16,
+        "POLICY_GENERAL_INS": 15,
+        "POLICY_CONSUMER": 16,
+        "POLICY_WINWIN_FINANCE": 15,
         "POLICY_ELS_CONSUMER": 16,
         "PRODUCT_CPI": 16,
+        "PRODUCT_CPI_POLICY": 15,
         "PRODUCT_CPI_CORE": 16,
+        "LENDING_CREDIT_INSURANCE": 14,
+        "PARTNER_TOSS": 16,
+        "PARTNER_FINDA_LOAN": 16,
+        "PARTNER_MIRAE_CAPITAL": 15,
+        "PARTNER_WOORI_CARD": 15,
     }
     def weighted_group_score(group_key: str) -> float:
         base_w = float(group_weights.get(group_key, 6))
         g = str(group_key).upper()
         if g.startswith("BRAND"):
+            return base_w * w_company
+        if g.startswith("PARTNER"):
             return base_w * w_company
         if g.startswith("POLICY"):
             return base_w * w_policy
@@ -226,6 +240,8 @@ def score_article(article: dict, config: dict, keywords: dict, now_kst: Optional
     mg_upper = {str(g).upper() for g in article.get("matched_groups", [])}
     focus_adjustment = 0.0
     if any(g.startswith("BRAND") for g in mg_upper):
+        focus_adjustment += 8.0 * (w_company - 1.0)
+    if any(g.startswith("PARTNER") for g in mg_upper):
         focus_adjustment += 8.0 * (w_company - 1.0)
     if any(g.startswith("POLICY") for g in mg_upper):
         focus_adjustment += 6.0 * (w_policy - 1.0)

@@ -1,17 +1,20 @@
 {
-  "preset": "company_first",
-  "lookback_days": 90,
-  "candidate_count": 100,
+  "preset": "els_lending_first",
+  "lookback_days": 10,
+  "candidate_count": 20,
   "focus_weights": {
-    "company_group": 2.0,
+    "company_group": 1.7,
     "policy_reg": 1.0,
-    "els_lending": 0.5
+    "els_lending": 1.5
   },
   "topic_quota_ratio": {
-    "company_group": 0.35,
-    "policy_reg": 0.25,
-    "lending": 0.2,
+    "company_group": 0.27,
+    "policy_reg": 0.2,
+    "lending": 0.16,
     "els": 0.1,
-    "product": 0.1
-  }
+    "product": 0.1,
+    "partnership": 0.1,
+    "competitor": 0.07
+  },
+  "output_dir": "C:\\Users\\Eun Byeol KIM\\OneDrive\\Desktop\\BNP_newsAgent"
 }

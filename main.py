@@ -58,11 +58,13 @@ FOCUS_WEIGHTS = {
     "els_lending": 1.0,
 }
 TOPIC_QUOTA_RATIO = {
-    "company_group": 0.35,
-    "policy_reg": 0.25,
-    "lending": 0.2,
+    "company_group": 0.27,
+    "policy_reg": 0.2,
+    "lending": 0.16,
     "els": 0.1,
     "product": 0.1,
+    "partnership": 0.1,
+    "competitor": 0.07,
 }
 
 # Optional: fill for auto email delivery.
@@ -142,6 +144,58 @@ def _keyword_group_terms(group_key: str, fallback: list[str]) -> list[str]:
     terms = node.get("terms", []) if isinstance(node, dict) else []
     cleaned = [str(t).strip() for t in terms if str(t).strip()]
     return cleaned if cleaned else list(fallback)
+
+
+def _keyword_group_term_index() -> dict[str, list[str]]:
+    groups = KEYWORDS_CONFIG.get("groups", {}) if isinstance(KEYWORDS_CONFIG, dict) else {}
+    if not isinstance(groups, dict):
+        return {}
+    index: dict[str, list[str]] = {}
+    for group_key, node in groups.items():
+        if not isinstance(node, dict):
+            continue
+        terms = node.get("terms", [])
+        if not isinstance(terms, list):
+            continue
+        cleaned = sorted({str(t).strip() for t in terms if str(t).strip()})
+        if cleaned:
+            index[str(group_key)] = cleaned
+    return index
+
+
+GROUP_TERM_INDEX: dict[str, list[str]] = {}
+
+
+def enrich_matches_from_keywords(item: dict) -> dict:
+    text_blob = f"{item.get('title', '')} {item.get('summary', '')}".lower()
+    matched_groups = set(item.get("matched_groups", []))
+    matched_keywords = set(item.get("matched_keywords", set()))
+
+    for group_key, terms in GROUP_TERM_INDEX.items():
+        group_hits = [term for term in terms if term.lower() in text_blob]
+        if not group_hits:
+            continue
+        matched_groups.add(group_key)
+        matched_keywords.update(group_hits)
+
+    item["matched_groups"] = sorted(matched_groups)
+    item["matched_keywords"] = matched_keywords
+    return item
+
+
+def _is_els_group_key(group_key: str) -> bool:
+    g = str(group_key).upper()
+    return "RISK_ELS" in g or g.startswith("RISK.ELS")
+
+
+def normalize_els_groups(item: dict) -> dict:
+    text_blob = f"{item.get('title', '')} {item.get('summary', '')}".lower()
+    els_anchor_terms = _keyword_group_terms("RISK.ELS_ASSET", ["ELS", "홍콩H지수", "H지수", "HSCEI"])
+    has_els_anchor = any(term.lower() in text_blob for term in els_anchor_terms)
+    if has_els_anchor:
+        return item
+    item["matched_groups"] = [g for g in item.get("matched_groups", []) if not _is_els_group_key(g)]
+    return item
 
 MEDIA_PRIORITY = {
     "yna.co.kr": 100,
@@ -225,6 +279,11 @@ def _default_news_monitoring_config() -> dict:
                 "label": "Product - CPI",
                 "query": '("신용생명보험" | "단체신용보험" | "CPI" | "대출안심보장보험") (보험사 | 금융사 | 카드사 | 저축은행)',
             },
+            {
+                "key": "COMPETITOR_CORE",
+                "label": "Competitor - Core",
+                "query": '("삼성생명" | "한화생명" | "교보생명" | "신한라이프" | "KB라이프생명" | "농협생명" | "미래에셋생명") (보험 | 상품 | 제휴 | 출시 | 실적)',
+            },
         ],
         "scoring": {
             "base_score": 10,
@@ -250,6 +309,7 @@ def _default_keywords() -> dict:
             "brand": ["BNP파리바카디프생명", "카디프생명", "BNP Paribas Cardif"],
             "els_hindex": ["ELS", "홍콩H지수", "H지수"],
             "product": ["ELS변액보험", "ETF변액보험", "변액보험", "ELS연계", "ETF연계", "신용생명보험", "단체신용보험", "CPI", "대출안심보장보험"],
+            "competitor": ["삼성생명", "한화생명", "교보생명", "신한라이프", "KB라이프생명", "농협생명", "미래에셋생명"],
         },
         "risk": {
             "sanction": ["금감원", "금융감독원", "금융위원회", "검사", "제재", "징계", "과징금"],
@@ -273,6 +333,7 @@ def _load_yaml_with_fallback(path: str, fallback: dict) -> dict:
 
 NEWS_MONITORING_CONFIG = _load_yaml_with_fallback(NEWS_MONITORING_CONFIG_FILE, _default_news_monitoring_config())
 KEYWORDS_CONFIG = _load_yaml_with_fallback(KEYWORDS_CONFIG_FILE, _default_keywords())
+GROUP_TERM_INDEX = _keyword_group_term_index()
 
 
 def _effective_days_back_from_config() -> int:
@@ -507,7 +568,7 @@ def is_sports_noise_article(item: dict) -> bool:
 
     # For partner queries, sports context is a hard exclude by default to avoid sponsor-team noise.
     matched_groups = {str(g).upper() for g in item.get("matched_groups", [])}
-    if any(g.startswith("PARTNER_") for g in matched_groups):
+    if any(g.startswith("PARTNER_") or g.startswith("PARTNER") for g in matched_groups):
         if any(term.lower() in text_blob for term in strong_finance_terms):
             return False
         return True
@@ -524,7 +585,12 @@ def apply_topic_quotas(news_items: list[dict], target_count: int) -> list[dict]:
     selected_keys = set()
     selected = []
 
-    for topic in ["company_group", "policy_reg", "lending", "els", "product"]:
+    priority_order = ["company_group", "policy_reg", "competitor", "lending", "els", "product", "partnership"]
+    topic_order = [topic for topic in priority_order if topic in quotas] + [
+        topic for topic in quotas.keys() if topic not in priority_order
+    ]
+
+    for topic in topic_order:
         count = 0
         for item in news_items:
             if item.get("topic") != topic:
@@ -1403,7 +1469,9 @@ def collect_candidates(lookback_days: int | None = None, max_candidates: int | N
             print(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] Failed query '{query}': {exc}")
 
     merged = merge_and_deduplicate(all_batches)
-    by_date = filter_by_days_back(merged, now_kst, days_back)
+    enriched = [enrich_matches_from_keywords(item) for item in merged]
+    normalized = [normalize_els_groups(item) for item in enriched]
+    by_date = filter_by_days_back(normalized, now_kst, days_back)
     no_sensitive = [item for item in by_date if not contains_sensitive_topic(item)]
     no_sports_noise = [item for item in no_sensitive if not is_sports_noise_article(item)]
     pool = [score_article(item, scoring_cfg, KEYWORDS_CONFIG, now_kst=now_kst) for item in no_sports_noise]

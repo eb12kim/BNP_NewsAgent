@@ -1,4 +1,4 @@
-# news_scoring.py
+﻿# news_scoring.py
 from __future__ import annotations
 
 import re
@@ -133,6 +133,30 @@ def _extract_list(d: dict, path: list[str], default: list[str] | None = None) ->
     return list(default or [])
 
 
+def _extract_group_terms(keywords: dict, prefix: str) -> list[str]:
+    groups = (keywords or {}).get("groups", {}) or {}
+    if not isinstance(groups, dict):
+        return []
+    pfx = str(prefix or "").upper()
+    terms: list[str] = []
+    for group_key, node in groups.items():
+        gk = str(group_key).upper()
+        if not gk.startswith(pfx):
+            continue
+        group_terms = node.get("terms", []) if isinstance(node, dict) else []
+        if not isinstance(group_terms, list):
+            continue
+        terms.extend(str(t).strip() for t in group_terms if str(t).strip())
+    return sorted(set(terms))
+
+
+def _merge_terms(*term_lists: list[str]) -> list[str]:
+    merged: list[str] = []
+    for terms in term_lists:
+        merged.extend(str(t).strip() for t in (terms or []) if str(t).strip())
+    return sorted(set(merged))
+
+
 def _contains_any(text: str, terms: list[str]) -> bool:
     t = (text or "").lower()
     return any(str(term).lower() in t for term in terms)
@@ -141,6 +165,11 @@ def _contains_any(text: str, terms: list[str]) -> bool:
 def _count_hits(text: str, terms: list[str]) -> int:
     t = (text or "").lower()
     return sum(1 for term in terms if str(term).lower() in t)
+
+
+def _is_els_group(group_key: str) -> bool:
+    g = str(group_key).upper()
+    return "RISK_ELS" in g or g.startswith("RISK.ELS")
 
 
 def _assign_level_compat(score: float, thresholds: dict, forced: bool = False) -> str:
@@ -157,19 +186,26 @@ def _assign_level_compat(score: float, thresholds: dict, forced: bool = False) -
 
 def _derive_topic(matched_groups: list[str], full_text: str) -> str:
     groups = {str(g).upper() for g in (matched_groups or [])}
-    if any("RISK_ELS" in g for g in groups):
+    if any(_is_els_group(g) for g in groups):
         return "els"
+    if any(g.startswith("LENDING") for g in groups):
+        return "lending"
     if any("POLICY" in g for g in groups):
         return "policy_reg"
+    if any(g.startswith("COMPETITOR") for g in groups):
+        return "competitor"
+    if any(g.startswith("PARTNER") for g in groups):
+        return "partnership"
     if any("PRODUCT" in g for g in groups):
         return "product"
-    if any("BRAND" in g for g in groups):
+    if any(g.startswith("GROUP") for g in groups):
+        return "company_group"
+    if any("BRAND" in g or g.startswith("ENTITY.") for g in groups):
         return "company_group"
     text = (full_text or "").lower()
     if any(t in text for t in ["대출", "주담대", "신용대출", "가계대출", "연체"]):
         return "lending"
     return "other"
-
 
 def score_article(article: dict, config: dict, keywords: dict, now_kst: Optional[datetime] = None) -> CompatScoredArticle:
     now_kst = now_kst or datetime.now(tz=KST)
@@ -181,13 +217,41 @@ def score_article(article: dict, config: dict, keywords: dict, now_kst: Optional
 
     entities = (keywords or {}).get("entities", {}) or {}
     risk = (keywords or {}).get("risk", {}) or {}
-    brand_terms = _extract_list({"x": entities}, ["x", "brand"], [])
-    els_terms = _extract_list({"x": entities}, ["x", "els_hindex"], [])
-    product_terms = _extract_list({"x": entities}, ["x", "product"], [])
-    sanction_terms = _extract_list({"x": risk}, ["x", "sanction"], [])
-    dispute_terms = _extract_list({"x": risk}, ["x", "dispute"], [])
-    loss_terms = _extract_list({"x": risk}, ["x", "loss"], [])
-    scale_terms = _extract_list({"x": risk}, ["x", "scale"], [])
+    brand_terms = _merge_terms(
+        _extract_group_terms(keywords, "ENTITY."),
+        _extract_list({"x": entities}, ["x", "brand"], []),
+    )
+    els_terms = _merge_terms(
+        _extract_group_terms(keywords, "RISK.ELS_ASSET"),
+        _extract_list({"x": entities}, ["x", "els_hindex"], []),
+    )
+    product_terms = _merge_terms(
+        _extract_group_terms(keywords, "PRODUCT."),
+        _extract_list({"x": entities}, ["x", "product"], []),
+    )
+    competitor_terms = _merge_terms(
+        _extract_group_terms(keywords, "COMPETITOR."),
+        _extract_list({"x": entities}, ["x", "competitor"], []),
+    )
+    partnership_terms = _extract_group_terms(keywords, "PARTNERSHIP.")
+    sanction_terms = _merge_terms(
+        _extract_group_terms(keywords, "RISK.ELS_SANCTION"),
+        _extract_group_terms(keywords, "RISK.GENERAL_ENFORCEMENT"),
+        _extract_group_terms(keywords, "POLICY.REGULATOR"),
+        _extract_list({"x": risk}, ["x", "sanction"], []),
+    )
+    dispute_terms = _merge_terms(
+        _extract_group_terms(keywords, "RISK.ELS_DISPUTE"),
+        _extract_list({"x": risk}, ["x", "dispute"], []),
+    )
+    loss_terms = _merge_terms(
+        _extract_group_terms(keywords, "RISK.ELS_LOSS"),
+        _extract_list({"x": risk}, ["x", "loss"], []),
+    )
+    scale_terms = _merge_terms(
+        _extract_group_terms(keywords, "RISK.ESCALATION_SIGNAL"),
+        _extract_list({"x": risk}, ["x", "scale"], []),
+    )
 
     base = float(scoring.get("base_score", 10))
     title_weight = float(scoring.get("title_weight", 1.5))
@@ -217,6 +281,9 @@ def score_article(article: dict, config: dict, keywords: dict, now_kst: Optional
         "PRODUCT_CPI_POLICY": 15,
         "PRODUCT_CPI_CORE": 16,
         "LENDING_CREDIT_INSURANCE": 14,
+        "COMPETITOR_CORE": 12,
+        "COMPETITOR.CORE": 12,
+        "COMPETITOR_RISK": 13,
         "PARTNER_TOSS": 16,
         "PARTNER_FINDA_LOAN": 16,
         "PARTNER_MIRAE_CAPITAL": 15,
@@ -228,12 +295,25 @@ def score_article(article: dict, config: dict, keywords: dict, now_kst: Optional
         if g.startswith("BRAND"):
             return base_w * w_company
         if g.startswith("PARTNER"):
+            return base_w * w_company * 0.5
+        if g.startswith("COMPETITOR"):
             return base_w * w_company
         if g.startswith("POLICY"):
             return base_w * w_policy
         if "RISK_ELS" in g or g.startswith("RISK"):
             return base_w * w_els
         return base_w
+
+    matched_groups = set(article.get("matched_groups", []))
+    if _contains_any(full, competitor_terms):
+        matched_groups.add("COMPETITOR.CORE")
+    if _contains_any(full, partnership_terms):
+        matched_groups.add("PARTNERSHIP.CORE")
+    has_els_anchor = _contains_any(full, els_terms)
+    # Guardrail: avoid false ELS labeling/scoring when only broad risk tokens hit.
+    if not has_els_anchor:
+        matched_groups = {g for g in matched_groups if not _is_els_group(g)}
+    article["matched_groups"] = sorted(matched_groups)
 
     group_score = sum(weighted_group_score(g) for g in article.get("matched_groups", []))
     group_score = min(group_score, 28.0)
@@ -242,7 +322,7 @@ def score_article(article: dict, config: dict, keywords: dict, now_kst: Optional
     if any(g.startswith("BRAND") for g in mg_upper):
         focus_adjustment += 8.0 * (w_company - 1.0)
     if any(g.startswith("PARTNER") for g in mg_upper):
-        focus_adjustment += 8.0 * (w_company - 1.0)
+        focus_adjustment += 4.0 * (w_company - 1.0)
     if any(g.startswith("POLICY") for g in mg_upper):
         focus_adjustment += 6.0 * (w_policy - 1.0)
     if any("RISK_ELS" in g or g.startswith("RISK") for g in mg_upper):
@@ -258,7 +338,9 @@ def score_article(article: dict, config: dict, keywords: dict, now_kst: Optional
     if _contains_any(full, els_terms) and _contains_any(full, dispute_terms):
         risk_score += 10 * w_els
 
-    context_terms = sorted(set(brand_terms + els_terms + product_terms + sanction_terms + dispute_terms + loss_terms))
+    context_terms = sorted(
+        set(brand_terms + competitor_terms + els_terms + product_terms + partnership_terms + sanction_terms + dispute_terms + loss_terms)
+    )
     context_score = _count_hits(title, context_terms) * title_weight + _count_hits(desc, context_terms) * desc_weight
 
     recency_cfg = scoring.get("recency", {}) or {}
@@ -275,7 +357,14 @@ def score_article(article: dict, config: dict, keywords: dict, now_kst: Optional
         elif hours <= 72:
             recency_score = float(recency_cfg.get("days_2_3", 1))
 
-    noise_kw = scoring.get("noise_keywords", {}) or {}
+    noise_kw = dict(scoring.get("noise_keywords", {}) or {})
+    noise_kw.setdefault("strong", [])
+    noise_kw.setdefault("medium", [])
+    noise_kw.setdefault("weak", [])
+    # Reflect keywords.yaml groups in noise penalties as well.
+    noise_kw["strong"] = _merge_terms(noise_kw["strong"], _extract_group_terms(keywords, "NOISE.STRONG"))
+    noise_kw["medium"] = _merge_terms(noise_kw["medium"], _extract_group_terms(keywords, "NOISE.MEDIUM"))
+    noise_kw["weak"] = _merge_terms(noise_kw["weak"], _extract_group_terms(keywords, "NOISE.WEAK"))
     noise_penalty_cfg = scoring.get("noise_penalty", {}) or {}
     sanction_hit = _contains_any(full, sanction_terms)
     noise_penalty = 0.0
@@ -389,3 +478,7 @@ def dedupe_and_cluster(scored_articles: List[CompatScoredArticle], config: dict)
         )
     )
     return clusters
+
+
+
+

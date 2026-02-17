@@ -10,9 +10,11 @@ import main
 TOPIC_LABELS = {
     "company_group": "당사/그룹",
     "policy_reg": "정책/감독",
+    "competitor": "경쟁사",
     "lending": "대출",
     "els": "ELS",
     "product": "상품",
+    "partnership": "파트너십",
     "other": "기타",
 }
 

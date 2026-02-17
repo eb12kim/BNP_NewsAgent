@@ -225,21 +225,43 @@ PRESET_SETTINGS = {
         "lookback_days": 3,
         "candidate_count": 100,
         "focus_weights": {"company_group": 1.0, "policy_reg": 1.0, "els_lending": 1.0},
+        "topic_quota_ratio": {"company_group": 0.27, "policy_reg": 0.2, "competitor": 0.07, "lending": 0.16, "els": 0.1, "product": 0.1, "partnership": 0.1},
     },
     "company_first": {
         "lookback_days": 3,
         "candidate_count": 100,
         "focus_weights": {"company_group": 1.4, "policy_reg": 1.0, "els_lending": 0.9},
+        "topic_quota_ratio": {"company_group": 0.4, "policy_reg": 0.17, "competitor": 0.08, "lending": 0.12, "els": 0.08, "product": 0.08, "partnership": 0.07},
     },
     "policy_first": {
         "lookback_days": 3,
         "candidate_count": 100,
         "focus_weights": {"company_group": 1.0, "policy_reg": 1.4, "els_lending": 1.0},
+        "topic_quota_ratio": {"company_group": 0.22, "policy_reg": 0.35, "competitor": 0.08, "lending": 0.13, "els": 0.09, "product": 0.07, "partnership": 0.06},
     },
     "els_lending_first": {
         "lookback_days": 3,
         "candidate_count": 100,
         "focus_weights": {"company_group": 0.9, "policy_reg": 1.0, "els_lending": 1.5},
+        "topic_quota_ratio": {"company_group": 0.2, "policy_reg": 0.15, "competitor": 0.05, "lending": 0.28, "els": 0.2, "product": 0.07, "partnership": 0.05},
+    },
+    "competitor_watch": {
+        "lookback_days": 3,
+        "candidate_count": 100,
+        "focus_weights": {"company_group": 1.2, "policy_reg": 1.0, "els_lending": 0.9},
+        "topic_quota_ratio": {"company_group": 0.2, "policy_reg": 0.15, "competitor": 0.35, "lending": 0.1, "els": 0.08, "product": 0.07, "partnership": 0.05},
+    },
+    "partnership_watch": {
+        "lookback_days": 3,
+        "candidate_count": 100,
+        "focus_weights": {"company_group": 1.2, "policy_reg": 1.0, "els_lending": 0.9},
+        "topic_quota_ratio": {"company_group": 0.22, "policy_reg": 0.14, "competitor": 0.08, "lending": 0.12, "els": 0.08, "product": 0.08, "partnership": 0.28},
+    },
+    "risk_fast_alert": {
+        "lookback_days": 2,
+        "candidate_count": 80,
+        "focus_weights": {"company_group": 1.0, "policy_reg": 1.3, "els_lending": 1.6},
+        "topic_quota_ratio": {"company_group": 0.15, "policy_reg": 0.24, "competitor": 0.05, "lending": 0.2, "els": 0.25, "product": 0.07, "partnership": 0.04},
     },
 }
 
@@ -449,6 +471,7 @@ def build_settings_with_preset(
     settings["lookback_days"] = int(base.get("lookback_days", settings["lookback_days"]))
     settings["candidate_count"] = int(base.get("candidate_count", settings["candidate_count"]))
     settings["focus_weights"].update(base.get("focus_weights", {}))
+    settings["topic_quota_ratio"].update(base.get("topic_quota_ratio", {}))
 
     settings["lookback_days"] = int(lookback_days)
     settings["candidate_count"] = int(candidate_count)

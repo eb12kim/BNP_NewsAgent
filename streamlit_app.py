@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 
@@ -19,12 +19,14 @@ TOPIC_LABELS = {
 }
 
 PRESET_LABELS = {
-    "balanced": "균형형",
-    "company_first": "당사우선",
-    "policy_first": "정책우선",
-    "els_lending_first": "ELS/대출우선",
+    "balanced": "Balanced",
+    "company_first": "Company First",
+    "policy_first": "Policy First",
+    "els_lending_first": "ELS/Lending First",
+    "competitor_watch": "Competitor Watch",
+    "partnership_watch": "Partnership Watch",
+    "risk_fast_alert": "Risk Fast Alert",
 }
-
 
 def _clamp_int(value: int, min_value: int, max_value: int) -> int:
     return max(min_value, min(max_value, int(value)))
@@ -189,11 +191,14 @@ def app() -> None:
     current_candidate_count = _clamp_int(int(current.get("candidate_count", 100)), 10, 100)
 
     c1, c2, c3, c4 = st.columns([1, 1, 1, 3])
+    preset_keys = list(PRESET_LABELS.keys())
+    current_preset = current.get("preset", "balanced")
+    preset_index = preset_keys.index(current_preset) if current_preset in preset_keys else 0
     with c1:
         preset_label = st.selectbox(
             "프리셋",
             options=list(PRESET_LABELS.values()),
-            index=list(PRESET_LABELS.keys()).index(current.get("preset", "balanced")),
+            index=preset_index,
         )
     with c2:
         lookback_days = st.number_input("조회기간(일)", min_value=1, max_value=30, value=current_lookback, step=1)
@@ -388,3 +393,4 @@ def app() -> None:
 
 if __name__ == "__main__":
     app()
+

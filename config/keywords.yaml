@@ -1,100 +1,259 @@
-version: "1.1"
+﻿version: "1.1"
 language: "ko"
 
+# =========================================================
+# 1) Legacy keyword buckets (backward compatibility)
+#    - Keep these for simple matching/search modules
+# =========================================================
 entities:
   brand:
+    # Company / Brand (KR/EN + common variants)
     - BNP파리바카디프생명
+    - BNP 파리바 카디프생명
+    - 비엔피파리바카디프생명
     - 카디프생명
     - 카디프 생명
+    - 카디프
     - BNP Paribas Cardif
+    - BNPParibasCardif
+    - Cardif
+    # BNP Group
     - BNP파리바
+    - BNP 파리바
+    - BNP Paribas
+    - BNP
+    - BNPP
+    - BNP파리바 그룹
+    - BNP파리바그룹
+
   els_hindex:
+    # ELS / H-index (include common Korean and ticker variants)
     - ELS
     - 주가연계증권
+    - 주가 연계 증권
     - 홍콩H지수
+    - 홍콩 H지수
     - H지수
     - HSCEI
+    - 항셍중국기업지수
+    - 항셍 중국기업지수
+
   product:
+    # Variable insurance (ELS/ETF)
     - ELS변액보험
     - ETF변액보험
     - 변액보험
+    - 변액
+    - 변액펀드
+    - 특별계정
     - ELS연계
     - ETF연계
+    - ELS 연계
+    - ETF 연계
+    - ELS연계보험
+    - ETF연계보험
+    - ETF
+    # CPI / Credit insurance
     - 신용생명보험
     - 단체신용보험
     - 신용보험
     - CPI
     - 대출안심보험
     - 대출안심보장보험
+    - 대출보험
+
   partnership:
+    # Partners / channels (case variants included)
     - 토스
     - toss
+    - TOSS
     - 핀다
     - finda
+    - FINDA
     - 핀다 대출
     - 미래에셋캐피탈
     - 우리카드
 
+  competitor:
+    # Competitors (major life insurers in Korea)
+    - 삼성생명
+    - 한화생명
+    - 교보생명
+    - 신한라이프
+    - KB라이프생명
+    - 농협생명
+    - 미래에셋생명
+    - ABL생명
+    - 동양생명
+    - 메트라이프생명
+    - 라이나생명
+    - 푸본현대생명
 risk:
   sanction:
     - 금감원
     - 금융감독원
     - 금융위원회
     - 검사
+    - 현장검사
+    - 실태점검
+    - 조사
     - 제재
+    - 제재심
     - 징계
     - 과징금
     - 기관경고
     - 시정명령
+    - 주의
+    - 경고
+
   dispute:
     - 배상
+    - 자율배상
+    - 배상비율
     - 분쟁조정
+    - 조정안
     - 민원
     - 소송
+    - 집단소송
     - 불완전판매
+    - 피해구제
+
   loss:
     - 원금손실
     - 손실확정
     - 대규모손실
+    - 손실
     - 녹인
+    - 노크인
+    - 낙인
     - 배리어
+    - 원금
     - 손해
     - 피해
+
   scale:
     - 대규모
     - 집단
     - 확정
     - 비율
+    - 급증
+    - 폭증
+    - 확산
+    - 전방위
+    - 최대
+    - 역대
 
+# =========================================================
+# 2) Scoring dictionary (group-key based)
+#    - news_scoring.py should primarily use this section
+# =========================================================
 groups:
+  # -------------------------
+  # Entities
+  # -------------------------
   ENTITY.COMPANY_OFFICIAL:
-    description: 당사 정식명
+    description: "당사 정식명(국문/영문/변형)"
     terms:
       - BNP파리바카디프생명
       - BNP 파리바 카디프생명
+      - 비엔피파리바카디프생명
+      - BNP Paribas Cardif
+      - BNPParibasCardif
+
   ENTITY.COMPANY_SHORT:
-    description: 당사 축약명
+    description: "당사 축약명(국문) 및 약칭(주의)"
     terms:
       - 카디프생명
       - 카디프 생명
+
+  ENTITY.COMPANY_AMBIGUOUS:
+    description: "당사 약칭(오탐 가능, 컨텍스트 결합 권장)"
+    terms:
       - 카디프
+      - Cardif
+
   ENTITY.GROUP:
-    description: BNP그룹
+    description: "BNP 그룹(표기 변형 포함)"
     terms:
       - BNP파리바
+      - BNP 파리바
       - BNP Paribas
+      - BNP
+      - BNPP
       - BNP파리바 그룹
+      - BNP파리바그룹
+      - BNP Paribas Group
+      - 비엔피파리바
 
+  # -------------------------
+  # Context keepers (disambiguation / keep rules)
+  # -------------------------
+  CONTEXT.INSURANCE_TERMS:
+    description: "보험/금융 문맥(약칭/노이즈 오탐 방지용)"
+    terms:
+      - 보험
+      - 생명보험
+      - 손해보험
+      - 보험사
+      - 생보
+      - 변액
+      - 변액보험
+      - 특별계정
+      - 펀드
+      - 적립금
+      - 수익률
+      - 해지
+      - 청약
+      - 모집
+      - 설계
+      - 약관
+      - 고지의무
+      - 소비자보호
+
+  CONTEXT.FINANCE_TERMS:
+    description: "금융/시장 문맥(그룹 기사/시황 구분 보조)"
+    terms:
+      - 은행
+      - 증권
+      - 자산운용
+      - 투자은행
+      - IB
+      - CIB
+      - 글로벌
+      - 유럽
+      - 프랑스
+      - 본사
+      - 그룹
+      - 규제
+      - 제재
+
+  # -------------------------
+  # Products
+  # -------------------------
   PRODUCT.VARIABLE_ELSETF:
-    description: ELS/ETF 변액보험
+    description: "ELS/ETF 변액보험(핵심)"
     terms:
       - ELS변액보험
       - ETF변액보험
-      - 변액보험
       - ELS연계
       - ETF연계
+      - ELS 연계
+      - ETF 연계
+      - ELS연계보험
+      - ETF연계보험
+      - ELS연계상품
+      - ETF연계상품
+
+  PRODUCT.VARIABLE_GENERAL:
+    description: "변액보험 일반"
+    terms:
+      - 변액보험
+      - 변액
+      - 변액펀드
+      - 특별계정
+
   PRODUCT.CPI:
-    description: CPI/신용생명보험
+    description: "CPI/신용(핵심)"
     terms:
       - CPI
       - 신용생명보험
@@ -102,75 +261,176 @@ groups:
       - 신용보험
       - 대출안심보험
       - 대출안심보장보험
+      - 대출보험
 
+  # -------------------------
+  # Partnership / channels
+  # -------------------------
+  PARTNERSHIP.CORE:
+    description: "파트너십 핵심 키워드"
+    terms:
+      - 토스
+      - toss
+      - TOSS
+      - 핀다
+      - finda
+      - FINDA
+      - 핀다 대출
+      - 미래에셋캐피탈
+      - 우리카드
+
+  # -------------------------
+  # Competitor monitoring
+  # -------------------------
+  COMPETITOR.CORE:
+    description: "경쟁사 모니터링 핵심 키워드"
+    terms:
+      - 삼성생명
+      - 한화생명
+      - 교보생명
+      - 신한라이프
+      - KB라이프생명
+      - 농협생명
+      - 미래에셋생명
+      - ABL생명
+      - 동양생명
+      - 메트라이프생명
+      - 라이나생명
+      - 푸본현대생명
+  # -------------------------
+  # ELS/H-index risk
+  # -------------------------
   RISK.ELS_ASSET:
-    description: ELS/H지수 자산
+    description: "ELS/H지수 자산"
     terms:
       - ELS
       - 주가연계증권
+      - 주가 연계 증권
       - 홍콩H지수
+      - 홍콩 H지수
       - H지수
       - HSCEI
+      - 항셍중국기업지수
+      - 항셍 중국기업지수
+
   RISK.ELS_SANCTION:
-    description: ELS 관련 제재/검사
+    description: "ELS 관련 제재/검사(당국 모니터링)"
     terms:
       - 금감원
+      - 금융감독원
+      - 금융위원회
       - 검사
+      - 현장검사
+      - 실태점검
+      - 조사
       - 제재
+      - 제재심
       - 징계
       - 과징금
       - 기관경고
       - 시정명령
+      - 주의
+      - 경고
+
   RISK.ELS_DISPUTE:
-    description: ELS 관련 분쟁/배상
+    description: "ELS 관련 분쟁/배상/민원"
     terms:
       - 배상
+      - 자율배상
+      - 배상비율
       - 분쟁조정
+      - 조정안
       - 민원
       - 소송
+      - 집단소송
+      - 피해구제
       - 불완전판매
+
   RISK.ELS_LOSS:
-    description: ELS 손실 신호
+    description: "ELS 손실 신호"
     terms:
       - 원금손실
       - 손실확정
       - 대규모손실
+      - 손실
+      - 원금
       - 녹인
+      - 노크인
+      - 낙인
       - 배리어
       - 손해
       - 피해
+
   RISK.ESCALATION_SIGNAL:
-    description: 집단/대규모 확산 신호
+    description: "집단/대규모 확산 신호"
     terms:
       - 대규모
       - 집단
       - 확정
       - 비율
+      - 급증
+      - 폭증
+      - 확산
+      - 전방위
+      - 최대
+      - 역대
 
-  POLICY.REGULATOR:
-    description: 감독기관 용어
+  RISK.GENERAL_ENFORCEMENT:
+    description: "제재/검사/분쟁 일반(자사 결합 강제 Alert 룰용)"
     terms:
       - 금감원
       - 금융감독원
       - 금융위원회
+      - 검사
+      - 현장검사
+      - 제재
+      - 제재심
+      - 징계
+      - 과징금
+      - 기관경고
+      - 시정명령
+      - 불완전판매
+      - 민원
+      - 소송
+      - 분쟁
+      - 피해
+
+  # -------------------------
+  # Policy / regulation
+  # -------------------------
+  POLICY.REGULATOR:
+    description: "감독기관/법령/정책 키워드"
+    terms:
+      - 금감원
+      - 금융감독원
+      - 금융위원회
+      - 생명보험협회
+      - 생보협
       - 보험업감독규정
       - 금융소비자보호법
       - 금소법
       - 상생금융
 
-  PARTNERSHIP.CORE:
-    description: 파트너십 핵심 키워드
+  POLICY.CONSUMER_PROTECTION:
+    description: "소비자보호/내부통제/판매원칙"
     terms:
-      - 토스
-      - toss
-      - 핀다
-      - finda
-      - 핀다 대출
-      - 미래에셋캐피탈
-      - 우리카드
+      - 금융소비자보호법
+      - 금소법
+      - 불완전판매
+      - 적합성
+      - 적정성
+      - 설명의무
+      - 내부통제
+      - 판매책임
+      - 책무구조
+      - 책무구조도
+      - 소비자보호
 
+  # -------------------------
+  # Noise / filters
+  # -------------------------
   NOISE.SPORTS:
-    description: 스포츠 후원/구단 노이즈
+    description: "스포츠/후원/구단 노이즈"
     terms:
       - 축구
       - 야구
@@ -196,23 +456,32 @@ groups:
       - 스폰서십
 
   FILTER.FINANCE_KEEP:
-    description: 금융/보험 문맥 유지 키워드
+    description: "노이즈 문맥에서도 유지할 금융/보험 키워드"
     terms:
       - 보험
       - 생명보험
       - 신용보험
       - 단체신용보험
+      - 신용생명보험
       - 대출
       - 대출안심
+      - 대출안심보험
+      - 대출안심보장보험
       - 금감원
       - 금융위원회
       - 금융감독원
       - 정책
+      - 규제
       - 제재
+      - 검사
+      - 과징금
       - 민원
       - 소비자보호
+      - 불완전판매
+      - 변액보험
+
   FILTER.STRONG_FINANCE_KEEP:
-    description: 스포츠 문맥에서 유지할 강한 금융 키워드
+    description: "스포츠 노이즈에서도 유지할 강한 금융 키워드(강제 유지)"
     terms:
       - 신용보험
       - 단체신용보험
@@ -220,13 +489,17 @@ groups:
       - 대출안심보험
       - 대출안심보장보험
       - 금융소비자보호법
+      - 금소법
       - 보험업감독규정
       - 검사
       - 제재
+      - 제재심
       - 과징금
+      - 기관경고
+      - 시정명령
 
   NOISE.STRONG:
-    description: 강한 노이즈
+    description: "강한 노이즈(리포트/매매/차트)"
     terms:
       - 리포트
       - 목표주가
@@ -236,15 +509,26 @@ groups:
       - 종목
       - 매수
       - 매도
+      - 추천주
+      - 투자전략
+
   NOISE.MEDIUM:
-    description: 중간 노이즈
+    description: "중간 노이즈(증시/시황)"
     terms:
       - 증시
       - 코스피
       - 코스닥
       - 나스닥
       - 다우
+      - S&P
+      - 시황
+      - 환율
+
   NOISE.WEAK:
-    description: 약한 노이즈
+    description: "약한 노이즈"
     terms:
       - 주가
+      - 주식
+      - 상승
+      - 하락
+

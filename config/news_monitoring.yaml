@@ -1,4 +1,4 @@
-version: "1.1"
+﻿version: "1.1"
 timezone: "Asia/Seoul"
 days_back: 3
 
@@ -79,6 +79,9 @@ query_groups:
     label: Partnership - Woori Card
     query: '("우리카드") (보험 | 신용보험 | 단체신용보험 | 대출 | 제휴)'
 
+  - key: COMPETITOR_CORE
+    label: Competitor - Core
+    query: '("삼성생명" | "한화생명" | "교보생명" | "신한라이프" | "KB라이프생명" | "농협생명" | "미래에셋생명") (보험 | 상품 | 제휴 | 출시 | 실적)'
 keyword_dictionary:
   external_file: "config/keywords.yaml"
   normalize:
@@ -130,3 +133,5 @@ scoring:
     high_alert: 70
     watchlist: 50
     fyi: 35
+
+

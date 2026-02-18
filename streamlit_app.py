@@ -307,30 +307,34 @@ def app() -> None:
 
     st.subheader("Draft 편집 (제목/요약/본문/삭제/순서)")
     if st.session_state.draft_rows:
-        edited_draft = st.data_editor(
-            st.session_state.draft_rows,
-            use_container_width=True,
-            hide_index=True,
-            key="draft_editor",
-            num_rows="fixed",
-            height=520,
-            column_config={
-                "유지": st.column_config.CheckboxColumn(help="해제하면 PDF에서 제외됩니다."),
-                "순서": st.column_config.NumberColumn(min_value=1, step=1),
-                "ID": st.column_config.NumberColumn(disabled=True),
-                "점수": st.column_config.NumberColumn(disabled=True),
-                "제목": st.column_config.TextColumn(),
-                "요약": st.column_config.TextColumn(),
-                "본문": st.column_config.TextColumn(),
-                "링크": st.column_config.LinkColumn(display_text="열기"),
-                "발행시각": st.column_config.TextColumn(disabled=True),
-                "매체": st.column_config.TextColumn(disabled=True),
-            },
-            disabled=["ID", "점수", "발행시각", "매체"],
-        )
+        with st.form("draft_edit_form"):
+            edited_draft = st.data_editor(
+                st.session_state.draft_rows,
+                use_container_width=True,
+                hide_index=True,
+                key="draft_editor",
+                num_rows="fixed",
+                height=520,
+                column_config={
+                    "유지": st.column_config.CheckboxColumn(help="해제하면 PDF에서 제외됩니다."),
+                    "순서": st.column_config.NumberColumn(min_value=1, step=1),
+                    "ID": st.column_config.NumberColumn(disabled=True),
+                    "점수": st.column_config.NumberColumn(disabled=True),
+                    "제목": st.column_config.TextColumn(),
+                    "요약": st.column_config.TextColumn(),
+                    "본문": st.column_config.TextColumn(),
+                    "링크": st.column_config.LinkColumn(display_text="열기"),
+                    "발행시각": st.column_config.TextColumn(disabled=True),
+                    "매체": st.column_config.TextColumn(disabled=True),
+                },
+                disabled=["ID", "점수", "발행시각", "매체"],
+            )
+            submit_draft = st.form_submit_button("Draft 변경 반영", use_container_width=True)
+
         rows = _normalize_rows(edited_draft)
-        if rows:
+        if submit_draft and rows:
             st.session_state.draft_rows = rows
+            st.success("Draft 변경사항을 반영했습니다.")
 
         d1, d2, d3 = st.columns([1, 1, 2])
         with d1:

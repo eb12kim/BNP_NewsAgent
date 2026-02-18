@@ -81,9 +81,6 @@ def _build_settings(
     preset_label: str,
     lookback_days: int,
     candidate_count: int,
-    w_company: float,
-    w_policy: float,
-    w_els: float,
     output_dir: str,
 ) -> dict:
     preset_key = _preset_key_from_label(preset_label)
@@ -91,11 +88,6 @@ def _build_settings(
         preset=preset_key,
         lookback_days=int(lookback_days),
         candidate_count=int(candidate_count),
-        focus_weights={
-            "company_group": float(w_company),
-            "policy_reg": float(w_policy),
-            "els_lending": float(w_els),
-        },
         output_dir=output_dir,
     )
 
@@ -207,21 +199,10 @@ def app() -> None:
     with c4:
         output_dir = st.text_input("산출물 저장 경로", value=str(current.get("output_dir", ".")))
 
-    w1, w2, w3 = st.columns(3)
-    with w1:
-        w_company = st.slider("당사/그룹 가중치", min_value=0.5, max_value=2.0, value=float(current.get("focus_weights", {}).get("company_group", 1.0)), step=0.1)
-    with w2:
-        w_policy = st.slider("정책/감독 가중치", min_value=0.5, max_value=2.0, value=float(current.get("focus_weights", {}).get("policy_reg", 1.0)), step=0.1)
-    with w3:
-        w_els = st.slider("ELS/대출 가중치", min_value=0.5, max_value=2.0, value=float(current.get("focus_weights", {}).get("els_lending", 1.0)), step=0.1)
-
     settings = _build_settings(
         preset_label=preset_label,
         lookback_days=int(lookback_days),
         candidate_count=int(candidate_count),
-        w_company=float(w_company),
-        w_policy=float(w_policy),
-        w_els=float(w_els),
         output_dir=output_dir,
     )
 

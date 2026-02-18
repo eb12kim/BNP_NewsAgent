@@ -267,31 +267,33 @@ def app() -> None:
         if not st.session_state.selection_rows or len(st.session_state.selection_rows) != len(candidates):
             selected_ids = {int(r.get("ID", 0) or 0) for r in st.session_state.selection_rows if bool(r.get("선택", False))}
             st.session_state.selection_rows = _build_selection_rows(candidates, selected_ids)
+        with st.form("candidate_selection_form"):
+            edited_sel = st.data_editor(
+                st.session_state.selection_rows,
+                use_container_width=True,
+                hide_index=True,
+                key="candidate_selector",
+                num_rows="fixed",
+                column_config={
+                    "선택": st.column_config.CheckboxColumn(required=True),
+                    "ID": st.column_config.NumberColumn(disabled=True),
+                    "레벨": st.column_config.TextColumn(disabled=True),
+                    "토픽": st.column_config.TextColumn(disabled=True),
+                    "점수": st.column_config.NumberColumn(disabled=True),
+                    "발행시각": st.column_config.TextColumn(disabled=True),
+                    "매체": st.column_config.TextColumn(disabled=True),
+                    "제목": st.column_config.TextColumn(disabled=True),
+                    "원문": st.column_config.LinkColumn(display_text="열기"),
+                },
+                disabled=["ID", "레벨", "토픽", "점수", "발행시각", "매체", "제목", "원문"],
+            )
+            submit_selection = st.form_submit_button("2) 선택 항목을 Draft로 가져오기", use_container_width=True)
 
-        edited_sel = st.data_editor(
-            st.session_state.selection_rows,
-            use_container_width=True,
-            hide_index=True,
-            key="candidate_selector",
-            num_rows="fixed",
-            column_config={
-                "선택": st.column_config.CheckboxColumn(required=True),
-                "ID": st.column_config.NumberColumn(disabled=True),
-                "레벨": st.column_config.TextColumn(disabled=True),
-                "토픽": st.column_config.TextColumn(disabled=True),
-                "점수": st.column_config.NumberColumn(disabled=True),
-                "발행시각": st.column_config.TextColumn(disabled=True),
-                "매체": st.column_config.TextColumn(disabled=True),
-                "제목": st.column_config.TextColumn(disabled=True),
-                "원문": st.column_config.LinkColumn(display_text="열기"),
-            },
-            disabled=["ID", "레벨", "토픽", "점수", "발행시각", "매체", "제목", "원문"],
-        )
         rows = _normalize_rows(edited_sel)
         if rows:
             st.session_state.selection_rows = rows
 
-        if st.button("2) 선택 항목을 Draft로 가져오기", use_container_width=True):
+        if submit_selection:
             ids = sorted([int(r.get("ID", 0) or 0) for r in st.session_state.selection_rows if bool(r.get("선택", False))])
             if not ids:
                 st.warning("먼저 후보를 선택하세요.")
